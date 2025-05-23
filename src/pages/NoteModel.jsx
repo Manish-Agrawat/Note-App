@@ -30,6 +30,7 @@ const NoteModal = ({ isOpen, onClose, mode, noteData, setNoteData }) => {
       return;
     }
     const payload = {
+      ...noteData,
       title: formData.title,
       content: formData.content,
       updatedAt: new Date().toISOString(),
@@ -41,16 +42,25 @@ const NoteModal = ({ isOpen, onClose, mode, noteData, setNoteData }) => {
         console.log("resp", resp);
         if (resp.payload.status === 201 || resp.payload.status === 200) {
           toast.success(mode ? "Note updated successfully" : "Note created successfully");
-          const resp = await dispatch(getAllNotesApi());
-          setNoteData(resp.payload.data);
-          setFormData({
-            title: "",
-            content: "",
+          const resp1 = await dispatch(getAllNotesApi());
+          setNoteData(resp1.payload.data);
+
+          const updatedNote = resp.payload.data;
+          console.log("updatedNote", updatedNote);
+          await updateNoteInDb({
+            ...updatedNote,
+            syncStatus: "synced",
+            operation: "",
           });
           onClose();
         }
       } else {
-        const resp = mode ? await updateNoteInDb(payload) : await addNoteToDb(payload);
+        const data = {
+          ...payload,
+          syncStatus: "unsynced",
+          operation: mode ? "update" : "create",
+        };
+        const resp = mode ? await updateNoteInDb(data) : await addNoteToDb(data);
         console.log(" offline update resp", resp);
         if (resp) {
           toast.success(mode ? "Note updated successfully" : "Note created successfully");

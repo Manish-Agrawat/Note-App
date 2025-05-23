@@ -53,6 +53,7 @@ export const removeFromDeletedQueue = async (id) => {
 };
 
 export const updateNoteInDb = async (note) => {
+  console.log("note", note);
   const db = await initDB();
 
   const result = await db.put(storeName, { ...note, synced: false, updatedAt: new Date().toISOString() });

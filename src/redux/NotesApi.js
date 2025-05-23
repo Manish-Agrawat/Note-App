@@ -25,7 +25,7 @@ export const addNoteApi = createAsyncThunk("/get-list", async (noteData, { rejec
         "Content-Type": "application/json",
       },
     });
-    console.log("response", response);
+    console.log("response response onl add", response);
 
     return response;
   } catch (error) {
@@ -42,7 +42,7 @@ export const updateNoteApi = createAsyncThunk("/get-notes-list/:id", async (note
         "Content-Type": "application/json",
       },
     });
-    console.log("response", response);
+    console.log("response update online", response);
 
     return response;
   } catch (error) {
