@@ -15,7 +15,7 @@ const Home = () => {
   const [search, setSearch] = useState("");
 
   const getNotes = useSelector((state) => state.getAllNotes.getAllNotes);
-  console.log("getNotes", getNotes);
+  // console.log("getNotes", getNotes);
   useEffect(() => {
     const notesData = async () => {
       try {
@@ -34,9 +34,9 @@ const Home = () => {
             }
           }
         } else {
-          console.log("offline");
+          // console.log("offline");
           const offlineData = await getAllNotesFromDb();
-          console.log("offlineData", offlineData);
+          // console.log("offlineData", offlineData);
           setNoteData(offlineData);
         }
       } catch (error) {
@@ -66,7 +66,7 @@ const Home = () => {
       if (navigator.onLine) {
         const resp = await dispatch(deleteNoteApi(note.id));
 
-        console.log("resp", resp);
+        // console.log("resp", resp);
         if (resp.payload.status === 200) {
           toast.success("Note deleted successfully");
           const resp = await dispatch(getAllNotesApi());
@@ -76,7 +76,7 @@ const Home = () => {
       } else {
         const resp = await deleteNoteFromDb(note.id);
         const resp1 = await addToDeletedQueue({ ...note, operation: "delete", syncStatus: "unsynced" });
-        console.log(" offline delt resp and qu", resp, resp1);
+        // console.log(" offline delt resp and qu", resp, resp1);
         toast.success("Note deleted successfully");
         const dbData = await getAllNotesFromDb();
         setNoteData(dbData);
