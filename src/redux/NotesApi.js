@@ -17,7 +17,8 @@ export const getAllNotesApi = createAsyncThunk("/get", async (_, { rejectWithVal
   }
 });
 
-export const addNoteApi = async (noteData) => {
+// add note
+export const addNoteApi = createAsyncThunk("/get-list", async (noteData, { rejectWithValue }) => {
   try {
     const response = await axios.post(`https://682fe255f504aa3c70f587cc.mockapi.io/notes/get-notes-list`, noteData, {
       headers: {
@@ -25,12 +26,13 @@ export const addNoteApi = async (noteData) => {
       },
     });
     console.log("response", response);
+
     return response;
   } catch (error) {
-    console.error("Error creating note:", error);
-    throw error;
+    console.error("Error adding note:", error);
+    return rejectWithValue(error);
   }
-};
+});
 
 //  update note
 export const updateNoteApi = createAsyncThunk("/get-notes-list/:id", async (noteData, { rejectWithValue }) => {

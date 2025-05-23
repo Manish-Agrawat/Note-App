@@ -4,20 +4,45 @@ import { deleteNoteApi, getAllNotesApi } from "../redux/NotesApi";
 import { useDispatch, useSelector } from "react-redux";
 import NoteModal from "./NoteModel";
 import { toast } from "react-toastify";
+import { addNoteToDb, addToDeletedQueue, deleteNoteFromDb, getAllNotesFromDb } from "../db/db";
 
 const Home = () => {
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState(false);
   const [selectedNote, setSelectedNote] = useState(null);
+  const [noteData, setNoteData] = useState(null);
 
   const getNotes = useSelector((state) => state.getAllNotes.getAllNotes);
   console.log("getNotes", getNotes);
   useEffect(() => {
     const notesData = async () => {
       try {
-        const resp = await dispatch(getAllNotesApi());
-        console.log("resp", resp);
+        if (navigator.onLine) {
+          const resp = await dispatch(getAllNotesApi());
+          console.log("resp", resp);
+          if (resp.payload.data) {
+            setNoteData(resp.payload.data);
+            const dbData = await getAllNotesFromDb();
+            console.log("dbData", dbData);
+            // first check is data in db or not
+            const dbIds = new Set(dbData.map((note) => String(note.id)));
+            const filterData = resp.payload.data.filter((note) => !dbIds.has(String(note.id)));
+            console.log("filterData", filterData);
+
+            for (const note of filterData) {
+              const data = resp.payload.data.filter((item) => item.id === note.id);
+              console.log("data", data);
+              const response = await addNoteToDb(note);
+              console.log("loacal save response", response);
+            }
+          }
+        } else {
+          console.log("offline");
+          const offlineData = await getAllNotesFromDb();
+          console.log("offlineData", offlineData);
+          setNoteData(offlineData);
+        }
       } catch (error) {
         console.error("Error fetching notes:", error);
       }
@@ -25,6 +50,7 @@ const Home = () => {
     notesData();
   }, [dispatch]);
   // this is for the  edit
+
   const handleEditClick = (note) => {
     setSelectedNote(note);
     setModalMode(true);
@@ -41,11 +67,21 @@ const Home = () => {
   // this is for the delete
   const handleDeleteClick = async (note) => {
     try {
-      const resp = await dispatch(deleteNoteApi(note.id));
-      console.log("resp", resp);
-      if (resp.payload.status === 200) {
+      if (navigator.onLine) {
+        const resp = await dispatch(deleteNoteApi(note.id));
+        console.log("resp", resp);
+        if (resp.payload.status === 200) {
+          toast.success("Note deleted successfully");
+          const resp = await dispatch(getAllNotesApi());
+          setNoteData(resp.payload.data);
+        }
+      } else {
+        const resp = await deleteNoteFromDb(note.id);
+        const resp1 = await addToDeletedQueue(note);
+        console.log(" offline delt resp and qu", resp, resp1);
         toast.success("Note deleted successfully");
-        const resp = await dispatch(getAllNotesApi());
+        const dbData = await getAllNotesFromDb();
+        setNoteData(dbData);
       }
     } catch (error) {
       console.error("Error deleting note:", error);
@@ -75,8 +111,8 @@ const Home = () => {
               </tr>
             </thead>
             <tbody>
-              {getNotes && getNotes.length > 0 ? (
-                getNotes.map((note, idx) => (
+              {noteData && noteData.length > 0 ? (
+                noteData.map((note, idx) => (
                   <tr key={idx} className="hover:bg-orange-50 border-t">
                     <td className="px-4 py-2 border text-center">
                       <div className="flex items-center justify-center gap-2">
@@ -111,6 +147,7 @@ const Home = () => {
         }}
         mode={modalMode}
         noteData={selectedNote}
+        setNoteData={setNoteData}
       />
     </>
   );

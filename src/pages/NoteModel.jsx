@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
-import { addNoteApi, updateNoteApi } from "../redux/NotesApi";
-const NoteModal = ({ isOpen, onClose, mode, noteData }) => {
-  console.log("notedata", noteData);
+import { addNoteApi, getAllNotesApi, updateNoteApi } from "../redux/NotesApi";
+import { invariant } from "framer-motion";
+import { addNoteToDb, getAllNotesFromDb, updateNoteInDb } from "../db/db";
+const NoteModal = ({ isOpen, onClose, mode, noteData, setNoteData }) => {
+  // console.log("notedata", noteData);
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -31,19 +33,35 @@ const NoteModal = ({ isOpen, onClose, mode, noteData }) => {
       title: formData.title,
       content: formData.content,
       updatedAt: new Date().toISOString(),
-      id: noteData?.id,
     };
 
     try {
-      const resp = mode ? await dispatch(updateNoteApi(payload)) : await dispatch(addNoteApi(payload));
-      console.log("resp", resp);
-      if (resp.payload.status === 201 || resp.payload.status === 200) {
-        toast.success(mode ? "Note updated successfully" : "Note created successfully");
-        setFormData({
-          title: "",
-          content: "",
-        });
-        onClose();
+      if (navigator.onLine) {
+        const resp = mode ? await dispatch(updateNoteApi({ ...payload, id: noteData?.id })) : await dispatch(addNoteApi(payload));
+        console.log("resp", resp);
+        if (resp.payload.status === 201 || resp.payload.status === 200) {
+          toast.success(mode ? "Note updated successfully" : "Note created successfully");
+          const resp = await dispatch(getAllNotesApi());
+          setNoteData(resp.payload.data);
+          setFormData({
+            title: "",
+            content: "",
+          });
+          onClose();
+        }
+      } else {
+        const resp = mode ? await updateNoteInDb(payload) : await addNoteToDb(payload);
+        console.log(" offline update resp", resp);
+        if (resp) {
+          toast.success(mode ? "Note updated successfully" : "Note created successfully");
+          const data = await getAllNotesFromDb();
+          setNoteData(data);
+          onClose();
+          setFormData({
+            title: "",
+            content: "",
+          });
+        }
       }
     } catch (error) {
       console.error("Error creating note:", error);
